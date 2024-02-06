@@ -1,0 +1,198 @@
+<html>
+<head>
+<title>hubconf.py</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #7a7e85;}
+.s1 { color: #bcbec4;}
+.s2 { color: #5f826b; font-style: italic;}
+.s3 { color: #cf8e6d;}
+.s4 { color: #bcbec4;}
+.s5 { color: #2aacb8;}
+.s6 { color: #6aab73;}
+</style>
+</head>
+<body bgcolor="#1e1f22">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+hubconf.py</font>
+</center></td></tr></table>
+<pre><span class="s0"># YOLOv5 🚀 by Ultralytics, AGPL-3.0 license</span>
+<span class="s2">&quot;&quot;&quot; 
+PyTorch Hub models https://pytorch.org/hub/ultralytics_yolov5 
+ 
+Usage: 
+    import torch 
+    model = torch.hub.load('ultralytics/yolov5', 'yolov5s')  # official model 
+    model = torch.hub.load('ultralytics/yolov5:master', 'yolov5s')  # from branch 
+    model = torch.hub.load('ultralytics/yolov5', 'custom', 'yolov5s.pt')  # custom/local model 
+    model = torch.hub.load('.', 'custom', 'yolov5s.pt', source='local')  # local repo 
+&quot;&quot;&quot;</span>
+
+<span class="s3">import </span><span class="s1">torch</span>
+
+
+<span class="s3">def </span><span class="s1">_create</span><span class="s4">(</span><span class="s1">name</span><span class="s4">, </span><span class="s1">pretrained</span><span class="s4">=</span><span class="s3">True</span><span class="s4">, </span><span class="s1">channels</span><span class="s4">=</span><span class="s5">3</span><span class="s4">, </span><span class="s1">classes</span><span class="s4">=</span><span class="s5">80</span><span class="s4">, </span><span class="s1">autoshape</span><span class="s4">=</span><span class="s3">True</span><span class="s4">, </span><span class="s1">verbose</span><span class="s4">=</span><span class="s3">True</span><span class="s4">, </span><span class="s1">device</span><span class="s4">=</span><span class="s3">None</span><span class="s4">):</span>
+    <span class="s2">&quot;&quot;&quot; 
+    Creates or loads a YOLOv5 model. 
+ 
+    Arguments: 
+        name (str): model name 'yolov5s' or path 'path/to/best.pt' 
+        pretrained (bool): load pretrained weights into the model 
+        channels (int): number of input channels 
+        classes (int): number of model classes 
+        autoshape (bool): apply YOLOv5 .autoshape() wrapper to model 
+        verbose (bool): print all information to screen 
+        device (str, torch.device, None): device to use for model parameters 
+ 
+    Returns: 
+        YOLOv5 model 
+    &quot;&quot;&quot;</span>
+    <span class="s3">from </span><span class="s1">pathlib </span><span class="s3">import </span><span class="s1">Path</span>
+
+    <span class="s3">from </span><span class="s1">models</span><span class="s4">.</span><span class="s1">common </span><span class="s3">import </span><span class="s1">AutoShape</span><span class="s4">, </span><span class="s1">DetectMultiBackend</span>
+    <span class="s3">from </span><span class="s1">models</span><span class="s4">.</span><span class="s1">experimental </span><span class="s3">import </span><span class="s1">attempt_load</span>
+    <span class="s3">from </span><span class="s1">models</span><span class="s4">.</span><span class="s1">yolo </span><span class="s3">import </span><span class="s1">ClassificationModel</span><span class="s4">, </span><span class="s1">DetectionModel</span><span class="s4">, </span><span class="s1">SegmentationModel</span>
+    <span class="s3">from </span><span class="s1">utils</span><span class="s4">.</span><span class="s1">downloads </span><span class="s3">import </span><span class="s1">attempt_download</span>
+    <span class="s3">from </span><span class="s1">utils</span><span class="s4">.</span><span class="s1">general </span><span class="s3">import </span><span class="s1">LOGGER</span><span class="s4">, </span><span class="s1">ROOT</span><span class="s4">, </span><span class="s1">check_requirements</span><span class="s4">, </span><span class="s1">intersect_dicts</span><span class="s4">, </span><span class="s1">logging</span>
+    <span class="s3">from </span><span class="s1">utils</span><span class="s4">.</span><span class="s1">torch_utils </span><span class="s3">import </span><span class="s1">select_device</span>
+
+    <span class="s3">if not </span><span class="s1">verbose</span><span class="s4">:</span>
+        <span class="s1">LOGGER</span><span class="s4">.</span><span class="s1">setLevel</span><span class="s4">(</span><span class="s1">logging</span><span class="s4">.</span><span class="s1">WARNING</span><span class="s4">)</span>
+    <span class="s1">check_requirements</span><span class="s4">(</span><span class="s1">ROOT </span><span class="s4">/ </span><span class="s6">&quot;requirements.txt&quot;</span><span class="s4">, </span><span class="s1">exclude</span><span class="s4">=(</span><span class="s6">&quot;opencv-python&quot;</span><span class="s4">, </span><span class="s6">&quot;tensorboard&quot;</span><span class="s4">, </span><span class="s6">&quot;thop&quot;</span><span class="s4">))</span>
+    <span class="s1">name </span><span class="s4">= </span><span class="s1">Path</span><span class="s4">(</span><span class="s1">name</span><span class="s4">)</span>
+    <span class="s1">path </span><span class="s4">= </span><span class="s1">name</span><span class="s4">.</span><span class="s1">with_suffix</span><span class="s4">(</span><span class="s6">&quot;.pt&quot;</span><span class="s4">) </span><span class="s3">if </span><span class="s1">name</span><span class="s4">.</span><span class="s1">suffix </span><span class="s4">== </span><span class="s6">&quot;&quot; </span><span class="s3">and not </span><span class="s1">name</span><span class="s4">.</span><span class="s1">is_dir</span><span class="s4">() </span><span class="s3">else </span><span class="s1">name  </span><span class="s0"># checkpoint path</span>
+    <span class="s3">try</span><span class="s4">:</span>
+        <span class="s1">device </span><span class="s4">= </span><span class="s1">select_device</span><span class="s4">(</span><span class="s1">device</span><span class="s4">)</span>
+        <span class="s3">if </span><span class="s1">pretrained </span><span class="s3">and </span><span class="s1">channels </span><span class="s4">== </span><span class="s5">3 </span><span class="s3">and </span><span class="s1">classes </span><span class="s4">== </span><span class="s5">80</span><span class="s4">:</span>
+            <span class="s3">try</span><span class="s4">:</span>
+                <span class="s1">model </span><span class="s4">= </span><span class="s1">DetectMultiBackend</span><span class="s4">(</span><span class="s1">path</span><span class="s4">, </span><span class="s1">device</span><span class="s4">=</span><span class="s1">device</span><span class="s4">, </span><span class="s1">fuse</span><span class="s4">=</span><span class="s1">autoshape</span><span class="s4">)  </span><span class="s0"># detection model</span>
+                <span class="s3">if </span><span class="s1">autoshape</span><span class="s4">:</span>
+                    <span class="s3">if </span><span class="s1">model</span><span class="s4">.</span><span class="s1">pt </span><span class="s3">and </span><span class="s1">isinstance</span><span class="s4">(</span><span class="s1">model</span><span class="s4">.</span><span class="s1">model</span><span class="s4">, </span><span class="s1">ClassificationModel</span><span class="s4">):</span>
+                        <span class="s1">LOGGER</span><span class="s4">.</span><span class="s1">warning</span><span class="s4">(</span>
+                            <span class="s6">&quot;WARNING ⚠️ YOLOv5 ClassificationModel is not yet AutoShape compatible. &quot;</span>
+                            <span class="s6">&quot;You must pass torch tensors in BCHW to this model, i.e. shape(1,3,224,224).&quot;</span>
+                        <span class="s4">)</span>
+                    <span class="s3">elif </span><span class="s1">model</span><span class="s4">.</span><span class="s1">pt </span><span class="s3">and </span><span class="s1">isinstance</span><span class="s4">(</span><span class="s1">model</span><span class="s4">.</span><span class="s1">model</span><span class="s4">, </span><span class="s1">SegmentationModel</span><span class="s4">):</span>
+                        <span class="s1">LOGGER</span><span class="s4">.</span><span class="s1">warning</span><span class="s4">(</span>
+                            <span class="s6">&quot;WARNING ⚠️ YOLOv5 SegmentationModel is not yet AutoShape compatible. &quot;</span>
+                            <span class="s6">&quot;You will not be able to run inference with this model.&quot;</span>
+                        <span class="s4">)</span>
+                    <span class="s3">else</span><span class="s4">:</span>
+                        <span class="s1">model </span><span class="s4">= </span><span class="s1">AutoShape</span><span class="s4">(</span><span class="s1">model</span><span class="s4">)  </span><span class="s0"># for file/URI/PIL/cv2/np inputs and NMS</span>
+            <span class="s3">except </span><span class="s1">Exception</span><span class="s4">:</span>
+                <span class="s1">model </span><span class="s4">= </span><span class="s1">attempt_load</span><span class="s4">(</span><span class="s1">path</span><span class="s4">, </span><span class="s1">device</span><span class="s4">=</span><span class="s1">device</span><span class="s4">, </span><span class="s1">fuse</span><span class="s4">=</span><span class="s3">False</span><span class="s4">)  </span><span class="s0"># arbitrary model</span>
+        <span class="s3">else</span><span class="s4">:</span>
+            <span class="s1">cfg </span><span class="s4">= </span><span class="s1">list</span><span class="s4">((</span><span class="s1">Path</span><span class="s4">(</span><span class="s1">__file__</span><span class="s4">).</span><span class="s1">parent </span><span class="s4">/ </span><span class="s6">&quot;models&quot;</span><span class="s4">).</span><span class="s1">rglob</span><span class="s4">(</span><span class="s6">f&quot;</span><span class="s3">{</span><span class="s1">path</span><span class="s4">.</span><span class="s1">stem</span><span class="s3">}</span><span class="s6">.yaml&quot;</span><span class="s4">))[</span><span class="s5">0</span><span class="s4">]  </span><span class="s0"># model.yaml path</span>
+            <span class="s1">model </span><span class="s4">= </span><span class="s1">DetectionModel</span><span class="s4">(</span><span class="s1">cfg</span><span class="s4">, </span><span class="s1">channels</span><span class="s4">, </span><span class="s1">classes</span><span class="s4">)  </span><span class="s0"># create model</span>
+            <span class="s3">if </span><span class="s1">pretrained</span><span class="s4">:</span>
+                <span class="s1">ckpt </span><span class="s4">= </span><span class="s1">torch</span><span class="s4">.</span><span class="s1">load</span><span class="s4">(</span><span class="s1">attempt_download</span><span class="s4">(</span><span class="s1">path</span><span class="s4">), </span><span class="s1">map_location</span><span class="s4">=</span><span class="s1">device</span><span class="s4">)  </span><span class="s0"># load</span>
+                <span class="s1">csd </span><span class="s4">= </span><span class="s1">ckpt</span><span class="s4">[</span><span class="s6">&quot;model&quot;</span><span class="s4">].</span><span class="s1">float</span><span class="s4">().</span><span class="s1">state_dict</span><span class="s4">()  </span><span class="s0"># checkpoint state_dict as FP32</span>
+                <span class="s1">csd </span><span class="s4">= </span><span class="s1">intersect_dicts</span><span class="s4">(</span><span class="s1">csd</span><span class="s4">, </span><span class="s1">model</span><span class="s4">.</span><span class="s1">state_dict</span><span class="s4">(), </span><span class="s1">exclude</span><span class="s4">=[</span><span class="s6">&quot;anchors&quot;</span><span class="s4">])  </span><span class="s0"># intersect</span>
+                <span class="s1">model</span><span class="s4">.</span><span class="s1">load_state_dict</span><span class="s4">(</span><span class="s1">csd</span><span class="s4">, </span><span class="s1">strict</span><span class="s4">=</span><span class="s3">False</span><span class="s4">)  </span><span class="s0"># load</span>
+                <span class="s3">if </span><span class="s1">len</span><span class="s4">(</span><span class="s1">ckpt</span><span class="s4">[</span><span class="s6">&quot;model&quot;</span><span class="s4">].</span><span class="s1">names</span><span class="s4">) == </span><span class="s1">classes</span><span class="s4">:</span>
+                    <span class="s1">model</span><span class="s4">.</span><span class="s1">names </span><span class="s4">= </span><span class="s1">ckpt</span><span class="s4">[</span><span class="s6">&quot;model&quot;</span><span class="s4">].</span><span class="s1">names  </span><span class="s0"># set class names attribute</span>
+        <span class="s3">if not </span><span class="s1">verbose</span><span class="s4">:</span>
+            <span class="s1">LOGGER</span><span class="s4">.</span><span class="s1">setLevel</span><span class="s4">(</span><span class="s1">logging</span><span class="s4">.</span><span class="s1">INFO</span><span class="s4">)  </span><span class="s0"># reset to default</span>
+        <span class="s3">return </span><span class="s1">model</span><span class="s4">.</span><span class="s1">to</span><span class="s4">(</span><span class="s1">device</span><span class="s4">)</span>
+
+    <span class="s3">except </span><span class="s1">Exception </span><span class="s3">as </span><span class="s1">e</span><span class="s4">:</span>
+        <span class="s1">help_url </span><span class="s4">= </span><span class="s6">&quot;https://docs.ultralytics.com/yolov5/tutorials/pytorch_hub_model_loading&quot;</span>
+        <span class="s1">s </span><span class="s4">= </span><span class="s6">f&quot;</span><span class="s3">{</span><span class="s1">e</span><span class="s3">}</span><span class="s6">. Cache may be out of date, try `force_reload=True` or see </span><span class="s3">{</span><span class="s1">help_url</span><span class="s3">} </span><span class="s6">for help.&quot;</span>
+        <span class="s3">raise </span><span class="s1">Exception</span><span class="s4">(</span><span class="s1">s</span><span class="s4">) </span><span class="s3">from </span><span class="s1">e</span>
+
+
+<span class="s3">def </span><span class="s1">custom</span><span class="s4">(</span><span class="s1">path</span><span class="s4">=</span><span class="s6">&quot;path/to/model.pt&quot;</span><span class="s4">, </span><span class="s1">autoshape</span><span class="s4">=</span><span class="s3">True</span><span class="s4">, </span><span class="s1">_verbose</span><span class="s4">=</span><span class="s3">True</span><span class="s4">, </span><span class="s1">device</span><span class="s4">=</span><span class="s3">None</span><span class="s4">):</span>
+    <span class="s0"># YOLOv5 custom or local model</span>
+    <span class="s3">return </span><span class="s1">_create</span><span class="s4">(</span><span class="s1">path</span><span class="s4">, </span><span class="s1">autoshape</span><span class="s4">=</span><span class="s1">autoshape</span><span class="s4">, </span><span class="s1">verbose</span><span class="s4">=</span><span class="s1">_verbose</span><span class="s4">, </span><span class="s1">device</span><span class="s4">=</span><span class="s1">device</span><span class="s4">)</span>
+
+
+<span class="s3">def </span><span class="s1">yolov5n</span><span class="s4">(</span><span class="s1">pretrained</span><span class="s4">=</span><span class="s3">True</span><span class="s4">, </span><span class="s1">channels</span><span class="s4">=</span><span class="s5">3</span><span class="s4">, </span><span class="s1">classes</span><span class="s4">=</span><span class="s5">80</span><span class="s4">, </span><span class="s1">autoshape</span><span class="s4">=</span><span class="s3">True</span><span class="s4">, </span><span class="s1">_verbose</span><span class="s4">=</span><span class="s3">True</span><span class="s4">, </span><span class="s1">device</span><span class="s4">=</span><span class="s3">None</span><span class="s4">):</span>
+    <span class="s0"># YOLOv5-nano model https://github.com/ultralytics/yolov5</span>
+    <span class="s3">return </span><span class="s1">_create</span><span class="s4">(</span><span class="s6">&quot;yolov5n&quot;</span><span class="s4">, </span><span class="s1">pretrained</span><span class="s4">, </span><span class="s1">channels</span><span class="s4">, </span><span class="s1">classes</span><span class="s4">, </span><span class="s1">autoshape</span><span class="s4">, </span><span class="s1">_verbose</span><span class="s4">, </span><span class="s1">device</span><span class="s4">)</span>
+
+
+<span class="s3">def </span><span class="s1">yolov5s</span><span class="s4">(</span><span class="s1">pretrained</span><span class="s4">=</span><span class="s3">True</span><span class="s4">, </span><span class="s1">channels</span><span class="s4">=</span><span class="s5">3</span><span class="s4">, </span><span class="s1">classes</span><span class="s4">=</span><span class="s5">80</span><span class="s4">, </span><span class="s1">autoshape</span><span class="s4">=</span><span class="s3">True</span><span class="s4">, </span><span class="s1">_verbose</span><span class="s4">=</span><span class="s3">True</span><span class="s4">, </span><span class="s1">device</span><span class="s4">=</span><span class="s3">None</span><span class="s4">):</span>
+    <span class="s0"># YOLOv5-small model https://github.com/ultralytics/yolov5</span>
+    <span class="s3">return </span><span class="s1">_create</span><span class="s4">(</span><span class="s6">&quot;yolov5s&quot;</span><span class="s4">, </span><span class="s1">pretrained</span><span class="s4">, </span><span class="s1">channels</span><span class="s4">, </span><span class="s1">classes</span><span class="s4">, </span><span class="s1">autoshape</span><span class="s4">, </span><span class="s1">_verbose</span><span class="s4">, </span><span class="s1">device</span><span class="s4">)</span>
+
+
+<span class="s3">def </span><span class="s1">yolov5m</span><span class="s4">(</span><span class="s1">pretrained</span><span class="s4">=</span><span class="s3">True</span><span class="s4">, </span><span class="s1">channels</span><span class="s4">=</span><span class="s5">3</span><span class="s4">, </span><span class="s1">classes</span><span class="s4">=</span><span class="s5">80</span><span class="s4">, </span><span class="s1">autoshape</span><span class="s4">=</span><span class="s3">True</span><span class="s4">, </span><span class="s1">_verbose</span><span class="s4">=</span><span class="s3">True</span><span class="s4">, </span><span class="s1">device</span><span class="s4">=</span><span class="s3">None</span><span class="s4">):</span>
+    <span class="s0"># YOLOv5-medium model https://github.com/ultralytics/yolov5</span>
+    <span class="s3">return </span><span class="s1">_create</span><span class="s4">(</span><span class="s6">&quot;yolov5m&quot;</span><span class="s4">, </span><span class="s1">pretrained</span><span class="s4">, </span><span class="s1">channels</span><span class="s4">, </span><span class="s1">classes</span><span class="s4">, </span><span class="s1">autoshape</span><span class="s4">, </span><span class="s1">_verbose</span><span class="s4">, </span><span class="s1">device</span><span class="s4">)</span>
+
+
+<span class="s3">def </span><span class="s1">yolov5l</span><span class="s4">(</span><span class="s1">pretrained</span><span class="s4">=</span><span class="s3">True</span><span class="s4">, </span><span class="s1">channels</span><span class="s4">=</span><span class="s5">3</span><span class="s4">, </span><span class="s1">classes</span><span class="s4">=</span><span class="s5">80</span><span class="s4">, </span><span class="s1">autoshape</span><span class="s4">=</span><span class="s3">True</span><span class="s4">, </span><span class="s1">_verbose</span><span class="s4">=</span><span class="s3">True</span><span class="s4">, </span><span class="s1">device</span><span class="s4">=</span><span class="s3">None</span><span class="s4">):</span>
+    <span class="s0"># YOLOv5-large model https://github.com/ultralytics/yolov5</span>
+    <span class="s3">return </span><span class="s1">_create</span><span class="s4">(</span><span class="s6">&quot;yolov5l&quot;</span><span class="s4">, </span><span class="s1">pretrained</span><span class="s4">, </span><span class="s1">channels</span><span class="s4">, </span><span class="s1">classes</span><span class="s4">, </span><span class="s1">autoshape</span><span class="s4">, </span><span class="s1">_verbose</span><span class="s4">, </span><span class="s1">device</span><span class="s4">)</span>
+
+
+<span class="s3">def </span><span class="s1">yolov5x</span><span class="s4">(</span><span class="s1">pretrained</span><span class="s4">=</span><span class="s3">True</span><span class="s4">, </span><span class="s1">channels</span><span class="s4">=</span><span class="s5">3</span><span class="s4">, </span><span class="s1">classes</span><span class="s4">=</span><span class="s5">80</span><span class="s4">, </span><span class="s1">autoshape</span><span class="s4">=</span><span class="s3">True</span><span class="s4">, </span><span class="s1">_verbose</span><span class="s4">=</span><span class="s3">True</span><span class="s4">, </span><span class="s1">device</span><span class="s4">=</span><span class="s3">None</span><span class="s4">):</span>
+    <span class="s0"># YOLOv5-xlarge model https://github.com/ultralytics/yolov5</span>
+    <span class="s3">return </span><span class="s1">_create</span><span class="s4">(</span><span class="s6">&quot;yolov5x&quot;</span><span class="s4">, </span><span class="s1">pretrained</span><span class="s4">, </span><span class="s1">channels</span><span class="s4">, </span><span class="s1">classes</span><span class="s4">, </span><span class="s1">autoshape</span><span class="s4">, </span><span class="s1">_verbose</span><span class="s4">, </span><span class="s1">device</span><span class="s4">)</span>
+
+
+<span class="s3">def </span><span class="s1">yolov5n6</span><span class="s4">(</span><span class="s1">pretrained</span><span class="s4">=</span><span class="s3">True</span><span class="s4">, </span><span class="s1">channels</span><span class="s4">=</span><span class="s5">3</span><span class="s4">, </span><span class="s1">classes</span><span class="s4">=</span><span class="s5">80</span><span class="s4">, </span><span class="s1">autoshape</span><span class="s4">=</span><span class="s3">True</span><span class="s4">, </span><span class="s1">_verbose</span><span class="s4">=</span><span class="s3">True</span><span class="s4">, </span><span class="s1">device</span><span class="s4">=</span><span class="s3">None</span><span class="s4">):</span>
+    <span class="s0"># YOLOv5-nano-P6 model https://github.com/ultralytics/yolov5</span>
+    <span class="s3">return </span><span class="s1">_create</span><span class="s4">(</span><span class="s6">&quot;yolov5n6&quot;</span><span class="s4">, </span><span class="s1">pretrained</span><span class="s4">, </span><span class="s1">channels</span><span class="s4">, </span><span class="s1">classes</span><span class="s4">, </span><span class="s1">autoshape</span><span class="s4">, </span><span class="s1">_verbose</span><span class="s4">, </span><span class="s1">device</span><span class="s4">)</span>
+
+
+<span class="s3">def </span><span class="s1">yolov5s6</span><span class="s4">(</span><span class="s1">pretrained</span><span class="s4">=</span><span class="s3">True</span><span class="s4">, </span><span class="s1">channels</span><span class="s4">=</span><span class="s5">3</span><span class="s4">, </span><span class="s1">classes</span><span class="s4">=</span><span class="s5">80</span><span class="s4">, </span><span class="s1">autoshape</span><span class="s4">=</span><span class="s3">True</span><span class="s4">, </span><span class="s1">_verbose</span><span class="s4">=</span><span class="s3">True</span><span class="s4">, </span><span class="s1">device</span><span class="s4">=</span><span class="s3">None</span><span class="s4">):</span>
+    <span class="s0"># YOLOv5-small-P6 model https://github.com/ultralytics/yolov5</span>
+    <span class="s3">return </span><span class="s1">_create</span><span class="s4">(</span><span class="s6">&quot;yolov5s6&quot;</span><span class="s4">, </span><span class="s1">pretrained</span><span class="s4">, </span><span class="s1">channels</span><span class="s4">, </span><span class="s1">classes</span><span class="s4">, </span><span class="s1">autoshape</span><span class="s4">, </span><span class="s1">_verbose</span><span class="s4">, </span><span class="s1">device</span><span class="s4">)</span>
+
+
+<span class="s3">def </span><span class="s1">yolov5m6</span><span class="s4">(</span><span class="s1">pretrained</span><span class="s4">=</span><span class="s3">True</span><span class="s4">, </span><span class="s1">channels</span><span class="s4">=</span><span class="s5">3</span><span class="s4">, </span><span class="s1">classes</span><span class="s4">=</span><span class="s5">80</span><span class="s4">, </span><span class="s1">autoshape</span><span class="s4">=</span><span class="s3">True</span><span class="s4">, </span><span class="s1">_verbose</span><span class="s4">=</span><span class="s3">True</span><span class="s4">, </span><span class="s1">device</span><span class="s4">=</span><span class="s3">None</span><span class="s4">):</span>
+    <span class="s0"># YOLOv5-medium-P6 model https://github.com/ultralytics/yolov5</span>
+    <span class="s3">return </span><span class="s1">_create</span><span class="s4">(</span><span class="s6">&quot;yolov5m6&quot;</span><span class="s4">, </span><span class="s1">pretrained</span><span class="s4">, </span><span class="s1">channels</span><span class="s4">, </span><span class="s1">classes</span><span class="s4">, </span><span class="s1">autoshape</span><span class="s4">, </span><span class="s1">_verbose</span><span class="s4">, </span><span class="s1">device</span><span class="s4">)</span>
+
+
+<span class="s3">def </span><span class="s1">yolov5l6</span><span class="s4">(</span><span class="s1">pretrained</span><span class="s4">=</span><span class="s3">True</span><span class="s4">, </span><span class="s1">channels</span><span class="s4">=</span><span class="s5">3</span><span class="s4">, </span><span class="s1">classes</span><span class="s4">=</span><span class="s5">80</span><span class="s4">, </span><span class="s1">autoshape</span><span class="s4">=</span><span class="s3">True</span><span class="s4">, </span><span class="s1">_verbose</span><span class="s4">=</span><span class="s3">True</span><span class="s4">, </span><span class="s1">device</span><span class="s4">=</span><span class="s3">None</span><span class="s4">):</span>
+    <span class="s0"># YOLOv5-large-P6 model https://github.com/ultralytics/yolov5</span>
+    <span class="s3">return </span><span class="s1">_create</span><span class="s4">(</span><span class="s6">&quot;yolov5l6&quot;</span><span class="s4">, </span><span class="s1">pretrained</span><span class="s4">, </span><span class="s1">channels</span><span class="s4">, </span><span class="s1">classes</span><span class="s4">, </span><span class="s1">autoshape</span><span class="s4">, </span><span class="s1">_verbose</span><span class="s4">, </span><span class="s1">device</span><span class="s4">)</span>
+
+
+<span class="s3">def </span><span class="s1">yolov5x6</span><span class="s4">(</span><span class="s1">pretrained</span><span class="s4">=</span><span class="s3">True</span><span class="s4">, </span><span class="s1">channels</span><span class="s4">=</span><span class="s5">3</span><span class="s4">, </span><span class="s1">classes</span><span class="s4">=</span><span class="s5">80</span><span class="s4">, </span><span class="s1">autoshape</span><span class="s4">=</span><span class="s3">True</span><span class="s4">, </span><span class="s1">_verbose</span><span class="s4">=</span><span class="s3">True</span><span class="s4">, </span><span class="s1">device</span><span class="s4">=</span><span class="s3">None</span><span class="s4">):</span>
+    <span class="s0"># YOLOv5-xlarge-P6 model https://github.com/ultralytics/yolov5</span>
+    <span class="s3">return </span><span class="s1">_create</span><span class="s4">(</span><span class="s6">&quot;yolov5x6&quot;</span><span class="s4">, </span><span class="s1">pretrained</span><span class="s4">, </span><span class="s1">channels</span><span class="s4">, </span><span class="s1">classes</span><span class="s4">, </span><span class="s1">autoshape</span><span class="s4">, </span><span class="s1">_verbose</span><span class="s4">, </span><span class="s1">device</span><span class="s4">)</span>
+
+
+<span class="s3">if </span><span class="s1">__name__ </span><span class="s4">== </span><span class="s6">&quot;__main__&quot;</span><span class="s4">:</span>
+    <span class="s3">import </span><span class="s1">argparse</span>
+    <span class="s3">from </span><span class="s1">pathlib </span><span class="s3">import </span><span class="s1">Path</span>
+
+    <span class="s3">import </span><span class="s1">numpy </span><span class="s3">as </span><span class="s1">np</span>
+    <span class="s3">from </span><span class="s1">PIL </span><span class="s3">import </span><span class="s1">Image</span>
+
+    <span class="s3">from </span><span class="s1">utils</span><span class="s4">.</span><span class="s1">general </span><span class="s3">import </span><span class="s1">cv2</span><span class="s4">, </span><span class="s1">print_args</span>
+
+    <span class="s0"># Argparser</span>
+    <span class="s1">parser </span><span class="s4">= </span><span class="s1">argparse</span><span class="s4">.</span><span class="s1">ArgumentParser</span><span class="s4">()</span>
+    <span class="s1">parser</span><span class="s4">.</span><span class="s1">add_argument</span><span class="s4">(</span><span class="s6">&quot;--model&quot;</span><span class="s4">, </span><span class="s1">type</span><span class="s4">=</span><span class="s1">str</span><span class="s4">, </span><span class="s1">default</span><span class="s4">=</span><span class="s6">&quot;yolov5s&quot;</span><span class="s4">, </span><span class="s1">help</span><span class="s4">=</span><span class="s6">&quot;model name&quot;</span><span class="s4">)</span>
+    <span class="s1">opt </span><span class="s4">= </span><span class="s1">parser</span><span class="s4">.</span><span class="s1">parse_args</span><span class="s4">()</span>
+    <span class="s1">print_args</span><span class="s4">(</span><span class="s1">vars</span><span class="s4">(</span><span class="s1">opt</span><span class="s4">))</span>
+
+    <span class="s0"># Model</span>
+    <span class="s1">model </span><span class="s4">= </span><span class="s1">_create</span><span class="s4">(</span><span class="s1">name</span><span class="s4">=</span><span class="s1">opt</span><span class="s4">.</span><span class="s1">model</span><span class="s4">, </span><span class="s1">pretrained</span><span class="s4">=</span><span class="s3">True</span><span class="s4">, </span><span class="s1">channels</span><span class="s4">=</span><span class="s5">3</span><span class="s4">, </span><span class="s1">classes</span><span class="s4">=</span><span class="s5">80</span><span class="s4">, </span><span class="s1">autoshape</span><span class="s4">=</span><span class="s3">True</span><span class="s4">, </span><span class="s1">verbose</span><span class="s4">=</span><span class="s3">True</span><span class="s4">)</span>
+    <span class="s0"># model = custom(path='path/to/model.pt')  # custom</span>
+
+    <span class="s0"># Images</span>
+    <span class="s1">imgs </span><span class="s4">= [</span>
+        <span class="s6">&quot;data/images/zidane.jpg&quot;</span><span class="s4">,  </span><span class="s0"># filename</span>
+        <span class="s1">Path</span><span class="s4">(</span><span class="s6">&quot;data/images/zidane.jpg&quot;</span><span class="s4">),  </span><span class="s0"># Path</span>
+        <span class="s6">&quot;https://ultralytics.com/images/zidane.jpg&quot;</span><span class="s4">,  </span><span class="s0"># URI</span>
+        <span class="s1">cv2</span><span class="s4">.</span><span class="s1">imread</span><span class="s4">(</span><span class="s6">&quot;data/images/bus.jpg&quot;</span><span class="s4">)[:, :, ::-</span><span class="s5">1</span><span class="s4">],  </span><span class="s0"># OpenCV</span>
+        <span class="s1">Image</span><span class="s4">.</span><span class="s1">open</span><span class="s4">(</span><span class="s6">&quot;data/images/bus.jpg&quot;</span><span class="s4">),  </span><span class="s0"># PIL</span>
+        <span class="s1">np</span><span class="s4">.</span><span class="s1">zeros</span><span class="s4">((</span><span class="s5">320</span><span class="s4">, </span><span class="s5">640</span><span class="s4">, </span><span class="s5">3</span><span class="s4">)),</span>
+    <span class="s4">]  </span><span class="s0"># numpy</span>
+
+    <span class="s0"># Inference</span>
+    <span class="s1">results </span><span class="s4">= </span><span class="s1">model</span><span class="s4">(</span><span class="s1">imgs</span><span class="s4">, </span><span class="s1">size</span><span class="s4">=</span><span class="s5">320</span><span class="s4">)  </span><span class="s0"># batched inference</span>
+
+    <span class="s0"># Results</span>
+    <span class="s1">results</span><span class="s4">.</span><span class="s1">print</span><span class="s4">()</span>
+    <span class="s1">results</span><span class="s4">.</span><span class="s1">save</span><span class="s4">()</span>
+</pre>
+</body>
+</html>

@@ -1,0 +1,169 @@
+<html>
+<head>
+<title>pyproject.toml</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #7a7e85;}
+.s1 { color: #bcbec4;}
+.s2 { color: #cf8e6d;}
+.s3 { color: #6aab73;}
+.s4 { color: #bcbec4;}
+</style>
+</head>
+<body bgcolor="#1e1f22">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+pyproject.toml</font>
+</center></td></tr></table>
+<pre><span class="s0"># Ultralyticsv5 YOLO 🚀, AGPL-3.0 license</span>
+
+<span class="s0"># Overview:</span>
+<span class="s0"># This pyproject.toml file manages the build, packaging, and distribution of the Ultralytics library.</span>
+<span class="s0"># It defines essential project metadata, dependencies, and settings used to develop and deploy the library.</span>
+
+<span class="s0"># Key Sections:</span>
+<span class="s0"># - [build-system]: Specifies the build requirements and backend (e.g., setuptools, wheel).</span>
+<span class="s0"># - [project]: Includes details like name, version, description, authors, dependencies and more.</span>
+<span class="s0"># - [project.optional-dependencies]: Provides additional, optional packages for extended features.</span>
+<span class="s0"># - [tool.*]: Configures settings for various tools (pytest, yapf, etc.) used in the project.</span>
+
+<span class="s0"># Installation:</span>
+<span class="s0"># The Ultralytics library can be installed using the command: 'pip install ultralytics'</span>
+<span class="s0"># For development purposes, you can install the package in editable mode with: 'pip install -e .'</span>
+<span class="s0"># This approach allows for real-time code modifications without the need for re-installation.</span>
+
+<span class="s0"># Documentation:</span>
+<span class="s0"># For comprehensive documentation and usage instructions, visit: https://docs.ultralytics.com</span>
+
+<span class="s1">[</span><span class="s2">build-system</span><span class="s1">]</span>
+<span class="s2">requires </span><span class="s1">= [</span><span class="s3">&quot;setuptools&gt;=43.0.0&quot;</span><span class="s1">, </span><span class="s3">&quot;wheel&quot;</span><span class="s1">]</span>
+<span class="s2">build-backend </span><span class="s1">= </span><span class="s3">&quot;setuptools.build_meta&quot;</span>
+
+<span class="s0"># Project settings -----------------------------------------------------------------------------------------------------</span>
+<span class="s1">[</span><span class="s2">project</span><span class="s1">]</span>
+<span class="s2">name </span><span class="s1">= </span><span class="s3">&quot;YOLOv5&quot;</span>
+<span class="s2">description </span><span class="s1">= </span><span class="s3">&quot;Ultralytics YOLOv5 for SOTA object detection, instance segmentation and image classification.&quot;</span>
+<span class="s2">readme </span><span class="s1">= </span><span class="s3">&quot;README.md&quot;</span>
+<span class="s2">requires-python </span><span class="s1">= </span><span class="s3">&quot;&gt;=3.8&quot;</span>
+<span class="s2">license </span><span class="s1">= { </span><span class="s3">&quot;text&quot; </span><span class="s1">= </span><span class="s3">&quot;AGPL-3.0&quot; </span><span class="s1">}</span>
+<span class="s2">keywords </span><span class="s1">= [</span><span class="s3">&quot;machine-learning&quot;</span><span class="s1">, </span><span class="s3">&quot;deep-learning&quot;</span><span class="s1">, </span><span class="s3">&quot;computer-vision&quot;</span><span class="s1">, </span><span class="s3">&quot;ML&quot;</span><span class="s1">, </span><span class="s3">&quot;DL&quot;</span><span class="s1">, </span><span class="s3">&quot;AI&quot;</span><span class="s1">, </span><span class="s3">&quot;YOLO&quot;</span><span class="s1">, </span><span class="s3">&quot;YOLOv3&quot;</span><span class="s1">, </span><span class="s3">&quot;YOLOv5&quot;</span><span class="s1">, </span><span class="s3">&quot;YOLOv8&quot;</span><span class="s1">, </span><span class="s3">&quot;HUB&quot;</span><span class="s1">, </span><span class="s3">&quot;Ultralytics&quot;</span><span class="s1">]</span>
+<span class="s2">authors </span><span class="s1">= [</span>
+    <span class="s1">{ </span><span class="s2">name </span><span class="s1">= </span><span class="s3">&quot;Glenn Jocher&quot; </span><span class="s1">},</span>
+    <span class="s1">{ </span><span class="s2">name </span><span class="s1">= </span><span class="s3">&quot;Ayush Chaurasia&quot; </span><span class="s1">},</span>
+    <span class="s1">{ </span><span class="s2">name </span><span class="s1">= </span><span class="s3">&quot;Jing Qiu&quot; </span><span class="s1">}</span>
+<span class="s1">]</span>
+<span class="s2">maintainers </span><span class="s1">= [</span>
+    <span class="s1">{ </span><span class="s2">name </span><span class="s1">= </span><span class="s3">&quot;Glenn Jocher&quot; </span><span class="s1">},</span>
+    <span class="s1">{ </span><span class="s2">name </span><span class="s1">= </span><span class="s3">&quot;Ayush Chaurasia&quot; </span><span class="s1">},</span>
+    <span class="s1">{ </span><span class="s2">name </span><span class="s1">= </span><span class="s3">&quot;Jing Qiu&quot; </span><span class="s1">}</span>
+<span class="s1">]</span>
+<span class="s2">classifiers </span><span class="s1">= [</span>
+    <span class="s3">&quot;Development Status :: 4 - Beta&quot;</span><span class="s1">,</span>
+    <span class="s3">&quot;Intended Audience :: Developers&quot;</span><span class="s1">,</span>
+    <span class="s3">&quot;Intended Audience :: Education&quot;</span><span class="s1">,</span>
+    <span class="s3">&quot;Intended Audience :: Science/Research&quot;</span><span class="s1">,</span>
+    <span class="s3">&quot;License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)&quot;</span><span class="s1">,</span>
+    <span class="s3">&quot;Programming Language :: Python :: 3&quot;</span><span class="s1">,</span>
+    <span class="s3">&quot;Programming Language :: Python :: 3.8&quot;</span><span class="s1">,</span>
+    <span class="s3">&quot;Programming Language :: Python :: 3.9&quot;</span><span class="s1">,</span>
+    <span class="s3">&quot;Programming Language :: Python :: 3.10&quot;</span><span class="s1">,</span>
+    <span class="s3">&quot;Programming Language :: Python :: 3.11&quot;</span><span class="s1">,</span>
+    <span class="s3">&quot;Topic :: Software Development&quot;</span><span class="s1">,</span>
+    <span class="s3">&quot;Topic :: Scientific/Engineering&quot;</span><span class="s1">,</span>
+    <span class="s3">&quot;Topic :: Scientific/Engineering :: Artificial Intelligence&quot;</span><span class="s1">,</span>
+    <span class="s3">&quot;Topic :: Scientific/Engineering :: Image Recognition&quot;</span><span class="s1">,</span>
+    <span class="s3">&quot;Operating System :: POSIX :: Linux&quot;</span><span class="s1">,</span>
+    <span class="s3">&quot;Operating System :: MacOS&quot;</span><span class="s1">,</span>
+    <span class="s3">&quot;Operating System :: Microsoft :: Windows&quot;</span><span class="s1">,</span>
+<span class="s1">]</span>
+
+<span class="s0"># Required dependencies ------------------------------------------------------------------------------------------------</span>
+<span class="s2">dependencies </span><span class="s1">= [</span>
+    <span class="s3">&quot;matplotlib&gt;=3.3.0&quot;</span><span class="s1">,</span>
+    <span class="s3">&quot;numpy&gt;=1.22.2&quot;</span><span class="s1">,</span>
+    <span class="s3">&quot;opencv-python&gt;=4.6.0&quot;</span><span class="s1">,</span>
+    <span class="s3">&quot;pillow&gt;=7.1.2&quot;</span><span class="s1">,</span>
+    <span class="s3">&quot;pyyaml&gt;=5.3.1&quot;</span><span class="s1">,</span>
+    <span class="s3">&quot;requests&gt;=2.23.0&quot;</span><span class="s1">,</span>
+    <span class="s3">&quot;scipy&gt;=1.4.1&quot;</span><span class="s1">,</span>
+    <span class="s3">&quot;torch&gt;=1.8.0&quot;</span><span class="s1">,</span>
+    <span class="s3">&quot;torchvision&gt;=0.9.0&quot;</span><span class="s1">,</span>
+    <span class="s3">&quot;tqdm&gt;=4.64.0&quot;</span><span class="s1">, </span><span class="s0"># progress bars</span>
+    <span class="s3">&quot;psutil&quot;</span><span class="s1">, </span><span class="s0"># system utilization</span>
+    <span class="s3">&quot;py-cpuinfo&quot;</span><span class="s1">, </span><span class="s0"># display CPU info</span>
+    <span class="s3">&quot;thop&gt;=0.1.1&quot;</span><span class="s1">, </span><span class="s0"># FLOPs computation</span>
+    <span class="s3">&quot;pandas&gt;=1.1.4&quot;</span><span class="s1">,</span>
+    <span class="s3">&quot;seaborn&gt;=0.11.0&quot;</span><span class="s1">, </span><span class="s0"># plotting</span>
+    <span class="s3">&quot;ultralytics&gt;=8.0.232&quot;</span>
+<span class="s1">]</span>
+
+<span class="s0"># Optional dependencies ------------------------------------------------------------------------------------------------</span>
+<span class="s1">[</span><span class="s2">project</span><span class="s1">.</span><span class="s2">optional-dependencies</span><span class="s1">]</span>
+<span class="s2">dev </span><span class="s1">= [</span>
+    <span class="s3">&quot;ipython&quot;</span><span class="s1">,</span>
+    <span class="s3">&quot;check-manifest&quot;</span><span class="s1">,</span>
+    <span class="s3">&quot;pre-commit&quot;</span><span class="s1">,</span>
+    <span class="s3">&quot;pytest&quot;</span><span class="s1">,</span>
+    <span class="s3">&quot;pytest-cov&quot;</span><span class="s1">,</span>
+    <span class="s3">&quot;coverage[toml]&quot;</span><span class="s1">,</span>
+    <span class="s3">&quot;mkdocs-material&quot;</span><span class="s1">,</span>
+    <span class="s3">&quot;mkdocstrings[python]&quot;</span><span class="s1">,</span>
+    <span class="s3">&quot;mkdocs-redirects&quot;</span><span class="s1">, </span><span class="s0"># for 301 redirects</span>
+    <span class="s3">&quot;mkdocs-ultralytics-plugin&gt;=0.0.34&quot;</span><span class="s1">, </span><span class="s0"># for meta descriptions and images, dates and authors</span>
+<span class="s1">]</span>
+<span class="s2">export </span><span class="s1">= [</span>
+    <span class="s3">&quot;onnx&gt;=1.12.0&quot;</span><span class="s1">, </span><span class="s0"># ONNX export</span>
+    <span class="s3">&quot;coremltools&gt;=7.0&quot;</span><span class="s1">, </span><span class="s0"># CoreML export</span>
+    <span class="s3">&quot;openvino-dev&gt;=2023.0&quot;</span><span class="s1">, </span><span class="s0"># OpenVINO export</span>
+    <span class="s3">&quot;tensorflow&lt;=2.13.1&quot;</span><span class="s1">, </span><span class="s0"># TF bug https://github.com/ultralytics/ultralytics/issues/5161</span>
+    <span class="s3">&quot;jax&lt;=0.4.21&quot;</span><span class="s1">, </span><span class="s0"># tensorflowjs bug https://github.com/google/jax/issues/18978</span>
+    <span class="s3">&quot;jaxlib&lt;=0.4.21&quot;</span><span class="s1">, </span><span class="s0"># tensorflowjs bug https://github.com/google/jax/issues/18978</span>
+    <span class="s3">&quot;tensorflowjs&gt;=3.9.0&quot;</span><span class="s1">, </span><span class="s0"># TF.js export, automatically installs tensorflow</span>
+<span class="s1">]</span>
+<span class="s0"># tensorflow&gt;=2.4.1,&lt;=2.13.1  # TF exports (-cpu, -aarch64, -macos)</span>
+<span class="s0"># tflite-support  # for TFLite model metadata</span>
+<span class="s0"># scikit-learn==0.19.2  # CoreML quantization</span>
+<span class="s0"># nvidia-pyindex  # TensorRT export</span>
+<span class="s0"># nvidia-tensorrt  # TensorRT export</span>
+<span class="s2">logging </span><span class="s1">= [</span>
+    <span class="s3">&quot;comet&quot;</span><span class="s1">, </span><span class="s0"># https://docs.ultralytics.com/integrations/comet/</span>
+    <span class="s3">&quot;tensorboard&gt;=2.13.0&quot;</span><span class="s1">,</span>
+    <span class="s3">&quot;dvclive&gt;=2.12.0&quot;</span><span class="s1">,</span>
+<span class="s1">]</span>
+<span class="s2">extra </span><span class="s1">= [</span>
+    <span class="s3">&quot;ipython&quot;</span><span class="s1">, </span><span class="s0"># interactive notebook</span>
+    <span class="s3">&quot;albumentations&gt;=1.0.3&quot;</span><span class="s1">, </span><span class="s0"># training augmentations</span>
+    <span class="s3">&quot;pycocotools&gt;=2.0.6&quot;</span><span class="s1">, </span><span class="s0"># COCO mAP</span>
+<span class="s1">]</span>
+
+<span class="s1">[</span><span class="s2">project</span><span class="s1">.</span><span class="s2">urls</span><span class="s1">]</span>
+<span class="s3">&quot;Bug Reports&quot; </span><span class="s1">= </span><span class="s3">&quot;https://github.com/ultralytics/yolov5/issues&quot;</span>
+<span class="s3">&quot;Funding&quot; </span><span class="s1">= </span><span class="s3">&quot;https://ultralytics.com&quot;</span>
+<span class="s3">&quot;Source&quot; </span><span class="s1">= </span><span class="s3">&quot;https://github.com/ultralytics/yolov5/&quot;</span>
+
+<span class="s0"># Tools settings -------------------------------------------------------------------------------------------------------</span>
+<span class="s1">[</span><span class="s2">tool</span><span class="s1">.</span><span class="s2">pytest</span><span class="s1">]</span>
+<span class="s2">norecursedirs </span><span class="s1">= [</span><span class="s3">&quot;.git&quot;</span><span class="s1">, </span><span class="s3">&quot;dist&quot;</span><span class="s1">, </span><span class="s3">&quot;build&quot;</span><span class="s1">]</span>
+<span class="s2">addopts </span><span class="s1">= </span><span class="s3">&quot;--doctest-modules --durations=30 --color=yes&quot;</span>
+
+<span class="s1">[</span><span class="s2">tool</span><span class="s1">.</span><span class="s2">isort</span><span class="s1">]</span>
+<span class="s2">line_length </span><span class="s1">= 120</span>
+<span class="s2">multi_line_output </span><span class="s1">= 0</span>
+
+<span class="s1">[</span><span class="s2">tool</span><span class="s1">.</span><span class="s2">ruff</span><span class="s1">]</span>
+<span class="s2">line-length </span><span class="s1">= 120</span>
+
+<span class="s1">[</span><span class="s2">tool</span><span class="s1">.</span><span class="s2">docformatter</span><span class="s1">]</span>
+<span class="s2">wrap-summaries </span><span class="s1">= 120</span>
+<span class="s2">wrap-descriptions </span><span class="s1">= 120</span>
+<span class="s2">in-place </span><span class="s1">= </span><span class="s4">true</span>
+<span class="s2">pre-summary-newline </span><span class="s1">= </span><span class="s4">true</span>
+<span class="s2">close-quotes-on-newline </span><span class="s1">= </span><span class="s4">true</span>
+
+<span class="s1">[</span><span class="s2">tool</span><span class="s1">.</span><span class="s2">codespell</span><span class="s1">]</span>
+<span class="s2">ignore-words-list </span><span class="s1">= </span><span class="s3">&quot;crate,nd,strack,dota,ane,segway,fo,gool,winn,commend&quot;</span>
+<span class="s2">skip </span><span class="s1">= </span><span class="s3">'*.csv,*venv*,docs/??/,docs/mkdocs_??.yml'</span>
+</pre>
+</body>
+</html>

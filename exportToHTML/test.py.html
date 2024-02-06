@@ -1,0 +1,49 @@
+<html>
+<head>
+<title>test.py</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #7a7e85;}
+.s1 { color: #bcbec4;}
+.s2 { color: #bcbec4;}
+</style>
+</head>
+<body bgcolor="#1e1f22">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+test.py</font>
+</center></td></tr></table>
+<pre><span class="s0"># import torch</span>
+<span class="s0"># from PIL import Image</span>
+<span class="s0"># from pathlib import Path</span>
+<span class="s0">#</span>
+<span class="s0"># model = torch.hub.load('ultralytics/yolov5', 'custom', source='C:/Users/USER/Downloads/yolov5-master/best.pt')</span>
+<span class="s0">#</span>
+<span class="s0"># img_path = 'C:/Users/USER/Downloads/yolov5-master/Scr_0001.jpg'</span>
+<span class="s0"># img = Image.open(img_path)</span>
+<span class="s0">#</span>
+<span class="s0"># results = model(img)</span>
+<span class="s0">#</span>
+<span class="s0"># results.print()</span>
+<span class="s0"># results.show()</span>
+<span class="s0">#</span>
+<span class="s0"># results.save(Path('runs/detect'))</span>
+<span class="s0"># results.xyxy[0]</span>
+
+<span class="s0"># YOLOv5 PyTorch HUB Inference (DetectionModels only)</span>
+
+
+
+<span class="s0"># import torch</span>
+<span class="s0">#</span>
+<span class="s0"># model = torch.hub.load('ultralytics/yolov5', 'C:/Users/USER/Downloads/yolov5-master/best.pt', force_reload=True)  # yolov5n - yolov5x6 or custom</span>
+<span class="s0"># im = 'C:/Users/USER/Downloads/yolov5-master/Scr_0001.jpg'  # file, Path, PIL.Image, OpenCV, nparray, list</span>
+<span class="s0"># results = model(im)  # inference</span>
+<span class="s0"># results.print()  # or .show(), .save(), .crop(), .pandas(), etc.</span>
+<span class="s0"># results.show()</span>
+
+<span class="s1">python detect</span><span class="s2">.</span><span class="s1">py </span><span class="s2">--</span><span class="s1">source 이미지경로 </span><span class="s2">--</span><span class="s1">weights best</span><span class="s2">.</span><span class="s1">pt</span>
+</pre>
+</body>
+</html>

@@ -1,0 +1,197 @@
+<html>
+<head>
+<title>benchmarks.py</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #7a7e85;}
+.s1 { color: #bcbec4;}
+.s2 { color: #5f826b; font-style: italic;}
+.s3 { color: #cf8e6d;}
+.s4 { color: #bcbec4;}
+.s5 { color: #2aacb8;}
+.s6 { color: #6aab73;}
+</style>
+</head>
+<body bgcolor="#1e1f22">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+benchmarks.py</font>
+</center></td></tr></table>
+<pre><span class="s0"># YOLOv5 🚀 by Ultralytics, AGPL-3.0 license</span>
+<span class="s2">&quot;&quot;&quot; 
+Run YOLOv5 benchmarks on all supported export formats. 
+ 
+Format                      | `export.py --include`         | Model 
+---                         | ---                           | --- 
+PyTorch                     | -                             | yolov5s.pt 
+TorchScript                 | `torchscript`                 | yolov5s.torchscript 
+ONNX                        | `onnx`                        | yolov5s.onnx 
+OpenVINO                    | `openvino`                    | yolov5s_openvino_model/ 
+TensorRT                    | `engine`                      | yolov5s.engine 
+CoreML                      | `coreml`                      | yolov5s.mlmodel 
+TensorFlow SavedModel       | `saved_model`                 | yolov5s_saved_model/ 
+TensorFlow GraphDef         | `pb`                          | yolov5s.pb 
+TensorFlow Lite             | `tflite`                      | yolov5s.tflite 
+TensorFlow Edge TPU         | `edgetpu`                     | yolov5s_edgetpu.tflite 
+TensorFlow.js               | `tfjs`                        | yolov5s_web_model/ 
+ 
+Requirements: 
+    $ pip install -r requirements.txt coremltools onnx onnx-simplifier onnxruntime openvino-dev tensorflow-cpu  # CPU 
+    $ pip install -r requirements.txt coremltools onnx onnx-simplifier onnxruntime-gpu openvino-dev tensorflow  # GPU 
+    $ pip install -U nvidia-tensorrt --index-url https://pypi.ngc.nvidia.com  # TensorRT 
+ 
+Usage: 
+    $ python benchmarks.py --weights yolov5s.pt --img 640 
+&quot;&quot;&quot;</span>
+
+<span class="s3">import </span><span class="s1">argparse</span>
+<span class="s3">import </span><span class="s1">platform</span>
+<span class="s3">import </span><span class="s1">sys</span>
+<span class="s3">import </span><span class="s1">time</span>
+<span class="s3">from </span><span class="s1">pathlib </span><span class="s3">import </span><span class="s1">Path</span>
+
+<span class="s3">import </span><span class="s1">pandas </span><span class="s3">as </span><span class="s1">pd</span>
+
+<span class="s1">FILE </span><span class="s4">= </span><span class="s1">Path</span><span class="s4">(</span><span class="s1">__file__</span><span class="s4">).</span><span class="s1">resolve</span><span class="s4">()</span>
+<span class="s1">ROOT </span><span class="s4">= </span><span class="s1">FILE</span><span class="s4">.</span><span class="s1">parents</span><span class="s4">[</span><span class="s5">0</span><span class="s4">]  </span><span class="s0"># YOLOv5 root directory</span>
+<span class="s3">if </span><span class="s1">str</span><span class="s4">(</span><span class="s1">ROOT</span><span class="s4">) </span><span class="s3">not in </span><span class="s1">sys</span><span class="s4">.</span><span class="s1">path</span><span class="s4">:</span>
+    <span class="s1">sys</span><span class="s4">.</span><span class="s1">path</span><span class="s4">.</span><span class="s1">append</span><span class="s4">(</span><span class="s1">str</span><span class="s4">(</span><span class="s1">ROOT</span><span class="s4">))  </span><span class="s0"># add ROOT to PATH</span>
+<span class="s0"># ROOT = ROOT.relative_to(Path.cwd())  # relative</span>
+
+<span class="s3">import </span><span class="s1">export</span>
+<span class="s3">from </span><span class="s1">models</span><span class="s4">.</span><span class="s1">experimental </span><span class="s3">import </span><span class="s1">attempt_load</span>
+<span class="s3">from </span><span class="s1">models</span><span class="s4">.</span><span class="s1">yolo </span><span class="s3">import </span><span class="s1">SegmentationModel</span>
+<span class="s3">from </span><span class="s1">segment</span><span class="s4">.</span><span class="s1">val </span><span class="s3">import </span><span class="s1">run </span><span class="s3">as </span><span class="s1">val_seg</span>
+<span class="s3">from </span><span class="s1">utils </span><span class="s3">import </span><span class="s1">notebook_init</span>
+<span class="s3">from </span><span class="s1">utils</span><span class="s4">.</span><span class="s1">general </span><span class="s3">import </span><span class="s1">LOGGER</span><span class="s4">, </span><span class="s1">check_yaml</span><span class="s4">, </span><span class="s1">file_size</span><span class="s4">, </span><span class="s1">print_args</span>
+<span class="s3">from </span><span class="s1">utils</span><span class="s4">.</span><span class="s1">torch_utils </span><span class="s3">import </span><span class="s1">select_device</span>
+<span class="s3">from </span><span class="s1">val </span><span class="s3">import </span><span class="s1">run </span><span class="s3">as </span><span class="s1">val_det</span>
+
+
+<span class="s3">def </span><span class="s1">run</span><span class="s4">(</span>
+    <span class="s1">weights</span><span class="s4">=</span><span class="s1">ROOT </span><span class="s4">/ </span><span class="s6">&quot;yolov5s.pt&quot;</span><span class="s4">,  </span><span class="s0"># weights path</span>
+    <span class="s1">imgsz</span><span class="s4">=</span><span class="s5">640</span><span class="s4">,  </span><span class="s0"># inference size (pixels)</span>
+    <span class="s1">batch_size</span><span class="s4">=</span><span class="s5">1</span><span class="s4">,  </span><span class="s0"># batch size</span>
+    <span class="s1">data</span><span class="s4">=</span><span class="s1">ROOT </span><span class="s4">/ </span><span class="s6">&quot;data/coco128.yaml&quot;</span><span class="s4">,  </span><span class="s0"># dataset.yaml path</span>
+    <span class="s1">device</span><span class="s4">=</span><span class="s6">&quot;&quot;</span><span class="s4">,  </span><span class="s0"># cuda device, i.e. 0 or 0,1,2,3 or cpu</span>
+    <span class="s1">half</span><span class="s4">=</span><span class="s3">False</span><span class="s4">,  </span><span class="s0"># use FP16 half-precision inference</span>
+    <span class="s1">test</span><span class="s4">=</span><span class="s3">False</span><span class="s4">,  </span><span class="s0"># test exports only</span>
+    <span class="s1">pt_only</span><span class="s4">=</span><span class="s3">False</span><span class="s4">,  </span><span class="s0"># test PyTorch only</span>
+    <span class="s1">hard_fail</span><span class="s4">=</span><span class="s3">False</span><span class="s4">,  </span><span class="s0"># throw error on benchmark failure</span>
+<span class="s4">):</span>
+    <span class="s1">y</span><span class="s4">, </span><span class="s1">t </span><span class="s4">= [], </span><span class="s1">time</span><span class="s4">.</span><span class="s1">time</span><span class="s4">()</span>
+    <span class="s1">device </span><span class="s4">= </span><span class="s1">select_device</span><span class="s4">(</span><span class="s1">device</span><span class="s4">)</span>
+    <span class="s1">model_type </span><span class="s4">= </span><span class="s1">type</span><span class="s4">(</span><span class="s1">attempt_load</span><span class="s4">(</span><span class="s1">weights</span><span class="s4">, </span><span class="s1">fuse</span><span class="s4">=</span><span class="s3">False</span><span class="s4">))  </span><span class="s0"># DetectionModel, SegmentationModel, etc.</span>
+    <span class="s3">for </span><span class="s1">i</span><span class="s4">, (</span><span class="s1">name</span><span class="s4">, </span><span class="s1">f</span><span class="s4">, </span><span class="s1">suffix</span><span class="s4">, </span><span class="s1">cpu</span><span class="s4">, </span><span class="s1">gpu</span><span class="s4">) </span><span class="s3">in </span><span class="s1">export</span><span class="s4">.</span><span class="s1">export_formats</span><span class="s4">().</span><span class="s1">iterrows</span><span class="s4">():  </span><span class="s0"># index, (name, file, suffix, CPU, GPU)</span>
+        <span class="s3">try</span><span class="s4">:</span>
+            <span class="s3">assert </span><span class="s1">i </span><span class="s3">not in </span><span class="s4">(</span><span class="s5">9</span><span class="s4">, </span><span class="s5">10</span><span class="s4">), </span><span class="s6">&quot;inference not supported&quot;  </span><span class="s0"># Edge TPU and TF.js are unsupported</span>
+            <span class="s3">assert </span><span class="s1">i </span><span class="s4">!= </span><span class="s5">5 </span><span class="s3">or </span><span class="s1">platform</span><span class="s4">.</span><span class="s1">system</span><span class="s4">() == </span><span class="s6">&quot;Darwin&quot;</span><span class="s4">, </span><span class="s6">&quot;inference only supported on macOS&gt;=10.13&quot;  </span><span class="s0"># CoreML</span>
+            <span class="s3">if </span><span class="s6">&quot;cpu&quot; </span><span class="s3">in </span><span class="s1">device</span><span class="s4">.</span><span class="s1">type</span><span class="s4">:</span>
+                <span class="s3">assert </span><span class="s1">cpu</span><span class="s4">, </span><span class="s6">&quot;inference not supported on CPU&quot;</span>
+            <span class="s3">if </span><span class="s6">&quot;cuda&quot; </span><span class="s3">in </span><span class="s1">device</span><span class="s4">.</span><span class="s1">type</span><span class="s4">:</span>
+                <span class="s3">assert </span><span class="s1">gpu</span><span class="s4">, </span><span class="s6">&quot;inference not supported on GPU&quot;</span>
+
+            <span class="s0"># Export</span>
+            <span class="s3">if </span><span class="s1">f </span><span class="s4">== </span><span class="s6">&quot;-&quot;</span><span class="s4">:</span>
+                <span class="s1">w </span><span class="s4">= </span><span class="s1">weights  </span><span class="s0"># PyTorch format</span>
+            <span class="s3">else</span><span class="s4">:</span>
+                <span class="s1">w </span><span class="s4">= </span><span class="s1">export</span><span class="s4">.</span><span class="s1">run</span><span class="s4">(</span>
+                    <span class="s1">weights</span><span class="s4">=</span><span class="s1">weights</span><span class="s4">, </span><span class="s1">imgsz</span><span class="s4">=[</span><span class="s1">imgsz</span><span class="s4">], </span><span class="s1">include</span><span class="s4">=[</span><span class="s1">f</span><span class="s4">], </span><span class="s1">batch_size</span><span class="s4">=</span><span class="s1">batch_size</span><span class="s4">, </span><span class="s1">device</span><span class="s4">=</span><span class="s1">device</span><span class="s4">, </span><span class="s1">half</span><span class="s4">=</span><span class="s1">half</span>
+                <span class="s4">)[-</span><span class="s5">1</span><span class="s4">]  </span><span class="s0"># all others</span>
+            <span class="s3">assert </span><span class="s1">suffix </span><span class="s3">in </span><span class="s1">str</span><span class="s4">(</span><span class="s1">w</span><span class="s4">), </span><span class="s6">&quot;export failed&quot;</span>
+
+            <span class="s0"># Validate</span>
+            <span class="s3">if </span><span class="s1">model_type </span><span class="s4">== </span><span class="s1">SegmentationModel</span><span class="s4">:</span>
+                <span class="s1">result </span><span class="s4">= </span><span class="s1">val_seg</span><span class="s4">(</span><span class="s1">data</span><span class="s4">, </span><span class="s1">w</span><span class="s4">, </span><span class="s1">batch_size</span><span class="s4">, </span><span class="s1">imgsz</span><span class="s4">, </span><span class="s1">plots</span><span class="s4">=</span><span class="s3">False</span><span class="s4">, </span><span class="s1">device</span><span class="s4">=</span><span class="s1">device</span><span class="s4">, </span><span class="s1">task</span><span class="s4">=</span><span class="s6">&quot;speed&quot;</span><span class="s4">, </span><span class="s1">half</span><span class="s4">=</span><span class="s1">half</span><span class="s4">)</span>
+                <span class="s1">metric </span><span class="s4">= </span><span class="s1">result</span><span class="s4">[</span><span class="s5">0</span><span class="s4">][</span><span class="s5">7</span><span class="s4">]  </span><span class="s0"># (box(p, r, map50, map), mask(p, r, map50, map), *loss(box, obj, cls))</span>
+            <span class="s3">else</span><span class="s4">:  </span><span class="s0"># DetectionModel:</span>
+                <span class="s1">result </span><span class="s4">= </span><span class="s1">val_det</span><span class="s4">(</span><span class="s1">data</span><span class="s4">, </span><span class="s1">w</span><span class="s4">, </span><span class="s1">batch_size</span><span class="s4">, </span><span class="s1">imgsz</span><span class="s4">, </span><span class="s1">plots</span><span class="s4">=</span><span class="s3">False</span><span class="s4">, </span><span class="s1">device</span><span class="s4">=</span><span class="s1">device</span><span class="s4">, </span><span class="s1">task</span><span class="s4">=</span><span class="s6">&quot;speed&quot;</span><span class="s4">, </span><span class="s1">half</span><span class="s4">=</span><span class="s1">half</span><span class="s4">)</span>
+                <span class="s1">metric </span><span class="s4">= </span><span class="s1">result</span><span class="s4">[</span><span class="s5">0</span><span class="s4">][</span><span class="s5">3</span><span class="s4">]  </span><span class="s0"># (p, r, map50, map, *loss(box, obj, cls))</span>
+            <span class="s1">speed </span><span class="s4">= </span><span class="s1">result</span><span class="s4">[</span><span class="s5">2</span><span class="s4">][</span><span class="s5">1</span><span class="s4">]  </span><span class="s0"># times (preprocess, inference, postprocess)</span>
+            <span class="s1">y</span><span class="s4">.</span><span class="s1">append</span><span class="s4">([</span><span class="s1">name</span><span class="s4">, </span><span class="s1">round</span><span class="s4">(</span><span class="s1">file_size</span><span class="s4">(</span><span class="s1">w</span><span class="s4">), </span><span class="s5">1</span><span class="s4">), </span><span class="s1">round</span><span class="s4">(</span><span class="s1">metric</span><span class="s4">, </span><span class="s5">4</span><span class="s4">), </span><span class="s1">round</span><span class="s4">(</span><span class="s1">speed</span><span class="s4">, </span><span class="s5">2</span><span class="s4">)])  </span><span class="s0"># MB, mAP, t_inference</span>
+        <span class="s3">except </span><span class="s1">Exception </span><span class="s3">as </span><span class="s1">e</span><span class="s4">:</span>
+            <span class="s3">if </span><span class="s1">hard_fail</span><span class="s4">:</span>
+                <span class="s3">assert </span><span class="s1">type</span><span class="s4">(</span><span class="s1">e</span><span class="s4">) </span><span class="s3">is </span><span class="s1">AssertionError</span><span class="s4">, </span><span class="s6">f&quot;Benchmark --hard-fail for </span><span class="s3">{</span><span class="s1">name</span><span class="s3">}</span><span class="s6">: </span><span class="s3">{</span><span class="s1">e</span><span class="s3">}</span><span class="s6">&quot;</span>
+            <span class="s1">LOGGER</span><span class="s4">.</span><span class="s1">warning</span><span class="s4">(</span><span class="s6">f&quot;WARNING ⚠️ Benchmark failure for </span><span class="s3">{</span><span class="s1">name</span><span class="s3">}</span><span class="s6">: </span><span class="s3">{</span><span class="s1">e</span><span class="s3">}</span><span class="s6">&quot;</span><span class="s4">)</span>
+            <span class="s1">y</span><span class="s4">.</span><span class="s1">append</span><span class="s4">([</span><span class="s1">name</span><span class="s4">, </span><span class="s3">None</span><span class="s4">, </span><span class="s3">None</span><span class="s4">, </span><span class="s3">None</span><span class="s4">])  </span><span class="s0"># mAP, t_inference</span>
+        <span class="s3">if </span><span class="s1">pt_only </span><span class="s3">and </span><span class="s1">i </span><span class="s4">== </span><span class="s5">0</span><span class="s4">:</span>
+            <span class="s3">break  </span><span class="s0"># break after PyTorch</span>
+
+    <span class="s0"># Print results</span>
+    <span class="s1">LOGGER</span><span class="s4">.</span><span class="s1">info</span><span class="s4">(</span><span class="s6">&quot;</span><span class="s3">\n</span><span class="s6">&quot;</span><span class="s4">)</span>
+    <span class="s1">parse_opt</span><span class="s4">()</span>
+    <span class="s1">notebook_init</span><span class="s4">()  </span><span class="s0"># print system info</span>
+    <span class="s1">c </span><span class="s4">= [</span><span class="s6">&quot;Format&quot;</span><span class="s4">, </span><span class="s6">&quot;Size (MB)&quot;</span><span class="s4">, </span><span class="s6">&quot;mAP50-95&quot;</span><span class="s4">, </span><span class="s6">&quot;Inference time (ms)&quot;</span><span class="s4">] </span><span class="s3">if </span><span class="s1">map </span><span class="s3">else </span><span class="s4">[</span><span class="s6">&quot;Format&quot;</span><span class="s4">, </span><span class="s6">&quot;Export&quot;</span><span class="s4">, </span><span class="s6">&quot;&quot;</span><span class="s4">, </span><span class="s6">&quot;&quot;</span><span class="s4">]</span>
+    <span class="s1">py </span><span class="s4">= </span><span class="s1">pd</span><span class="s4">.</span><span class="s1">DataFrame</span><span class="s4">(</span><span class="s1">y</span><span class="s4">, </span><span class="s1">columns</span><span class="s4">=</span><span class="s1">c</span><span class="s4">)</span>
+    <span class="s1">LOGGER</span><span class="s4">.</span><span class="s1">info</span><span class="s4">(</span><span class="s6">f&quot;</span><span class="s3">\n</span><span class="s6">Benchmarks complete (</span><span class="s3">{</span><span class="s1">time</span><span class="s4">.</span><span class="s1">time</span><span class="s4">() - </span><span class="s1">t</span><span class="s3">:</span><span class="s6">.2f</span><span class="s3">}</span><span class="s6">s)&quot;</span><span class="s4">)</span>
+    <span class="s1">LOGGER</span><span class="s4">.</span><span class="s1">info</span><span class="s4">(</span><span class="s1">str</span><span class="s4">(</span><span class="s1">py </span><span class="s3">if </span><span class="s1">map </span><span class="s3">else </span><span class="s1">py</span><span class="s4">.</span><span class="s1">iloc</span><span class="s4">[:, :</span><span class="s5">2</span><span class="s4">]))</span>
+    <span class="s3">if </span><span class="s1">hard_fail </span><span class="s3">and </span><span class="s1">isinstance</span><span class="s4">(</span><span class="s1">hard_fail</span><span class="s4">, </span><span class="s1">str</span><span class="s4">):</span>
+        <span class="s1">metrics </span><span class="s4">= </span><span class="s1">py</span><span class="s4">[</span><span class="s6">&quot;mAP50-95&quot;</span><span class="s4">].</span><span class="s1">array  </span><span class="s0"># values to compare to floor</span>
+        <span class="s1">floor </span><span class="s4">= </span><span class="s1">eval</span><span class="s4">(</span><span class="s1">hard_fail</span><span class="s4">)  </span><span class="s0"># minimum metric floor to pass, i.e. = 0.29 mAP for YOLOv5n</span>
+        <span class="s3">assert </span><span class="s1">all</span><span class="s4">(</span><span class="s1">x </span><span class="s4">&gt; </span><span class="s1">floor </span><span class="s3">for </span><span class="s1">x </span><span class="s3">in </span><span class="s1">metrics </span><span class="s3">if </span><span class="s1">pd</span><span class="s4">.</span><span class="s1">notna</span><span class="s4">(</span><span class="s1">x</span><span class="s4">)), </span><span class="s6">f&quot;HARD FAIL: mAP50-95 &lt; floor </span><span class="s3">{</span><span class="s1">floor</span><span class="s3">}</span><span class="s6">&quot;</span>
+    <span class="s3">return </span><span class="s1">py</span>
+
+
+<span class="s3">def </span><span class="s1">test</span><span class="s4">(</span>
+    <span class="s1">weights</span><span class="s4">=</span><span class="s1">ROOT </span><span class="s4">/ </span><span class="s6">&quot;yolov5s.pt&quot;</span><span class="s4">,  </span><span class="s0"># weights path</span>
+    <span class="s1">imgsz</span><span class="s4">=</span><span class="s5">640</span><span class="s4">,  </span><span class="s0"># inference size (pixels)</span>
+    <span class="s1">batch_size</span><span class="s4">=</span><span class="s5">1</span><span class="s4">,  </span><span class="s0"># batch size</span>
+    <span class="s1">data</span><span class="s4">=</span><span class="s1">ROOT </span><span class="s4">/ </span><span class="s6">&quot;data/coco128.yaml&quot;</span><span class="s4">,  </span><span class="s0"># dataset.yaml path</span>
+    <span class="s1">device</span><span class="s4">=</span><span class="s6">&quot;&quot;</span><span class="s4">,  </span><span class="s0"># cuda device, i.e. 0 or 0,1,2,3 or cpu</span>
+    <span class="s1">half</span><span class="s4">=</span><span class="s3">False</span><span class="s4">,  </span><span class="s0"># use FP16 half-precision inference</span>
+    <span class="s1">test</span><span class="s4">=</span><span class="s3">False</span><span class="s4">,  </span><span class="s0"># test exports only</span>
+    <span class="s1">pt_only</span><span class="s4">=</span><span class="s3">False</span><span class="s4">,  </span><span class="s0"># test PyTorch only</span>
+    <span class="s1">hard_fail</span><span class="s4">=</span><span class="s3">False</span><span class="s4">,  </span><span class="s0"># throw error on benchmark failure</span>
+<span class="s4">):</span>
+    <span class="s1">y</span><span class="s4">, </span><span class="s1">t </span><span class="s4">= [], </span><span class="s1">time</span><span class="s4">.</span><span class="s1">time</span><span class="s4">()</span>
+    <span class="s1">device </span><span class="s4">= </span><span class="s1">select_device</span><span class="s4">(</span><span class="s1">device</span><span class="s4">)</span>
+    <span class="s3">for </span><span class="s1">i</span><span class="s4">, (</span><span class="s1">name</span><span class="s4">, </span><span class="s1">f</span><span class="s4">, </span><span class="s1">suffix</span><span class="s4">, </span><span class="s1">gpu</span><span class="s4">) </span><span class="s3">in </span><span class="s1">export</span><span class="s4">.</span><span class="s1">export_formats</span><span class="s4">().</span><span class="s1">iterrows</span><span class="s4">():  </span><span class="s0"># index, (name, file, suffix, gpu-capable)</span>
+        <span class="s3">try</span><span class="s4">:</span>
+            <span class="s1">w </span><span class="s4">= (</span>
+                <span class="s1">weights</span>
+                <span class="s3">if </span><span class="s1">f </span><span class="s4">== </span><span class="s6">&quot;-&quot;</span>
+                <span class="s3">else </span><span class="s1">export</span><span class="s4">.</span><span class="s1">run</span><span class="s4">(</span><span class="s1">weights</span><span class="s4">=</span><span class="s1">weights</span><span class="s4">, </span><span class="s1">imgsz</span><span class="s4">=[</span><span class="s1">imgsz</span><span class="s4">], </span><span class="s1">include</span><span class="s4">=[</span><span class="s1">f</span><span class="s4">], </span><span class="s1">device</span><span class="s4">=</span><span class="s1">device</span><span class="s4">, </span><span class="s1">half</span><span class="s4">=</span><span class="s1">half</span><span class="s4">)[-</span><span class="s5">1</span><span class="s4">]</span>
+            <span class="s4">)  </span><span class="s0"># weights</span>
+            <span class="s3">assert </span><span class="s1">suffix </span><span class="s3">in </span><span class="s1">str</span><span class="s4">(</span><span class="s1">w</span><span class="s4">), </span><span class="s6">&quot;export failed&quot;</span>
+            <span class="s1">y</span><span class="s4">.</span><span class="s1">append</span><span class="s4">([</span><span class="s1">name</span><span class="s4">, </span><span class="s3">True</span><span class="s4">])</span>
+        <span class="s3">except </span><span class="s1">Exception</span><span class="s4">:</span>
+            <span class="s1">y</span><span class="s4">.</span><span class="s1">append</span><span class="s4">([</span><span class="s1">name</span><span class="s4">, </span><span class="s3">False</span><span class="s4">])  </span><span class="s0"># mAP, t_inference</span>
+
+    <span class="s0"># Print results</span>
+    <span class="s1">LOGGER</span><span class="s4">.</span><span class="s1">info</span><span class="s4">(</span><span class="s6">&quot;</span><span class="s3">\n</span><span class="s6">&quot;</span><span class="s4">)</span>
+    <span class="s1">parse_opt</span><span class="s4">()</span>
+    <span class="s1">notebook_init</span><span class="s4">()  </span><span class="s0"># print system info</span>
+    <span class="s1">py </span><span class="s4">= </span><span class="s1">pd</span><span class="s4">.</span><span class="s1">DataFrame</span><span class="s4">(</span><span class="s1">y</span><span class="s4">, </span><span class="s1">columns</span><span class="s4">=[</span><span class="s6">&quot;Format&quot;</span><span class="s4">, </span><span class="s6">&quot;Export&quot;</span><span class="s4">])</span>
+    <span class="s1">LOGGER</span><span class="s4">.</span><span class="s1">info</span><span class="s4">(</span><span class="s6">f&quot;</span><span class="s3">\n</span><span class="s6">Exports complete (</span><span class="s3">{</span><span class="s1">time</span><span class="s4">.</span><span class="s1">time</span><span class="s4">() - </span><span class="s1">t</span><span class="s3">:</span><span class="s6">.2f</span><span class="s3">}</span><span class="s6">s)&quot;</span><span class="s4">)</span>
+    <span class="s1">LOGGER</span><span class="s4">.</span><span class="s1">info</span><span class="s4">(</span><span class="s1">str</span><span class="s4">(</span><span class="s1">py</span><span class="s4">))</span>
+    <span class="s3">return </span><span class="s1">py</span>
+
+
+<span class="s3">def </span><span class="s1">parse_opt</span><span class="s4">():</span>
+    <span class="s1">parser </span><span class="s4">= </span><span class="s1">argparse</span><span class="s4">.</span><span class="s1">ArgumentParser</span><span class="s4">()</span>
+    <span class="s1">parser</span><span class="s4">.</span><span class="s1">add_argument</span><span class="s4">(</span><span class="s6">&quot;--weights&quot;</span><span class="s4">, </span><span class="s1">type</span><span class="s4">=</span><span class="s1">str</span><span class="s4">, </span><span class="s1">default</span><span class="s4">=</span><span class="s1">ROOT </span><span class="s4">/ </span><span class="s6">&quot;yolov5s.pt&quot;</span><span class="s4">, </span><span class="s1">help</span><span class="s4">=</span><span class="s6">&quot;weights path&quot;</span><span class="s4">)</span>
+    <span class="s1">parser</span><span class="s4">.</span><span class="s1">add_argument</span><span class="s4">(</span><span class="s6">&quot;--imgsz&quot;</span><span class="s4">, </span><span class="s6">&quot;--img&quot;</span><span class="s4">, </span><span class="s6">&quot;--img-size&quot;</span><span class="s4">, </span><span class="s1">type</span><span class="s4">=</span><span class="s1">int</span><span class="s4">, </span><span class="s1">default</span><span class="s4">=</span><span class="s5">640</span><span class="s4">, </span><span class="s1">help</span><span class="s4">=</span><span class="s6">&quot;inference size (pixels)&quot;</span><span class="s4">)</span>
+    <span class="s1">parser</span><span class="s4">.</span><span class="s1">add_argument</span><span class="s4">(</span><span class="s6">&quot;--batch-size&quot;</span><span class="s4">, </span><span class="s1">type</span><span class="s4">=</span><span class="s1">int</span><span class="s4">, </span><span class="s1">default</span><span class="s4">=</span><span class="s5">1</span><span class="s4">, </span><span class="s1">help</span><span class="s4">=</span><span class="s6">&quot;batch size&quot;</span><span class="s4">)</span>
+    <span class="s1">parser</span><span class="s4">.</span><span class="s1">add_argument</span><span class="s4">(</span><span class="s6">&quot;--data&quot;</span><span class="s4">, </span><span class="s1">type</span><span class="s4">=</span><span class="s1">str</span><span class="s4">, </span><span class="s1">default</span><span class="s4">=</span><span class="s1">ROOT </span><span class="s4">/ </span><span class="s6">&quot;data/coco128.yaml&quot;</span><span class="s4">, </span><span class="s1">help</span><span class="s4">=</span><span class="s6">&quot;dataset.yaml path&quot;</span><span class="s4">)</span>
+    <span class="s1">parser</span><span class="s4">.</span><span class="s1">add_argument</span><span class="s4">(</span><span class="s6">&quot;--device&quot;</span><span class="s4">, </span><span class="s1">default</span><span class="s4">=</span><span class="s6">&quot;&quot;</span><span class="s4">, </span><span class="s1">help</span><span class="s4">=</span><span class="s6">&quot;cuda device, i.e. 0 or 0,1,2,3 or cpu&quot;</span><span class="s4">)</span>
+    <span class="s1">parser</span><span class="s4">.</span><span class="s1">add_argument</span><span class="s4">(</span><span class="s6">&quot;--half&quot;</span><span class="s4">, </span><span class="s1">action</span><span class="s4">=</span><span class="s6">&quot;store_true&quot;</span><span class="s4">, </span><span class="s1">help</span><span class="s4">=</span><span class="s6">&quot;use FP16 half-precision inference&quot;</span><span class="s4">)</span>
+    <span class="s1">parser</span><span class="s4">.</span><span class="s1">add_argument</span><span class="s4">(</span><span class="s6">&quot;--test&quot;</span><span class="s4">, </span><span class="s1">action</span><span class="s4">=</span><span class="s6">&quot;store_true&quot;</span><span class="s4">, </span><span class="s1">help</span><span class="s4">=</span><span class="s6">&quot;test exports only&quot;</span><span class="s4">)</span>
+    <span class="s1">parser</span><span class="s4">.</span><span class="s1">add_argument</span><span class="s4">(</span><span class="s6">&quot;--pt-only&quot;</span><span class="s4">, </span><span class="s1">action</span><span class="s4">=</span><span class="s6">&quot;store_true&quot;</span><span class="s4">, </span><span class="s1">help</span><span class="s4">=</span><span class="s6">&quot;test PyTorch only&quot;</span><span class="s4">)</span>
+    <span class="s1">parser</span><span class="s4">.</span><span class="s1">add_argument</span><span class="s4">(</span><span class="s6">&quot;--hard-fail&quot;</span><span class="s4">, </span><span class="s1">nargs</span><span class="s4">=</span><span class="s6">&quot;?&quot;</span><span class="s4">, </span><span class="s1">const</span><span class="s4">=</span><span class="s3">True</span><span class="s4">, </span><span class="s1">default</span><span class="s4">=</span><span class="s3">False</span><span class="s4">, </span><span class="s1">help</span><span class="s4">=</span><span class="s6">&quot;Exception on error or &lt; min metric&quot;</span><span class="s4">)</span>
+    <span class="s1">opt </span><span class="s4">= </span><span class="s1">parser</span><span class="s4">.</span><span class="s1">parse_args</span><span class="s4">()</span>
+    <span class="s1">opt</span><span class="s4">.</span><span class="s1">data </span><span class="s4">= </span><span class="s1">check_yaml</span><span class="s4">(</span><span class="s1">opt</span><span class="s4">.</span><span class="s1">data</span><span class="s4">)  </span><span class="s0"># check YAML</span>
+    <span class="s1">print_args</span><span class="s4">(</span><span class="s1">vars</span><span class="s4">(</span><span class="s1">opt</span><span class="s4">))</span>
+    <span class="s3">return </span><span class="s1">opt</span>
+
+
+<span class="s3">def </span><span class="s1">main</span><span class="s4">(</span><span class="s1">opt</span><span class="s4">):</span>
+    <span class="s1">test</span><span class="s4">(**</span><span class="s1">vars</span><span class="s4">(</span><span class="s1">opt</span><span class="s4">)) </span><span class="s3">if </span><span class="s1">opt</span><span class="s4">.</span><span class="s1">test </span><span class="s3">else </span><span class="s1">run</span><span class="s4">(**</span><span class="s1">vars</span><span class="s4">(</span><span class="s1">opt</span><span class="s4">))</span>
+
+
+<span class="s3">if </span><span class="s1">__name__ </span><span class="s4">== </span><span class="s6">&quot;__main__&quot;</span><span class="s4">:</span>
+    <span class="s1">opt </span><span class="s4">= </span><span class="s1">parse_opt</span><span class="s4">()</span>
+    <span class="s1">main</span><span class="s4">(</span><span class="s1">opt</span><span class="s4">)</span>
+</pre>
+</body>
+</html>
